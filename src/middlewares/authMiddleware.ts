@@ -1,30 +1,36 @@
-import { NextFunction, Request, Response } from "express";
-import jsonwebtoken, { JwtPayload } from "jsonwebtoken";
-import dotenv from "dotenv";
+import { NextFunction, Response } from "express";
+import passport from "passport";
+import HttpStatus from "http-status";
+import { responseMessage } from "../constants/responseMessage";
+import { sendApiResponse } from "../utils/apiError";
+import { CustomRequest } from "../interface/requests";
 
-dotenv.config();
-
-export const authenticateUser = async (
-  req: Request,
+export const authenticateUser = (
+  req: CustomRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies.token;
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
+  passport.authenticate(
+    "jwt",
+    { session: false },
+    (err: any, user: any, info: any) => {
+      if (err) {
+        return sendApiResponse(res, HttpStatus.INTERNAL_SERVER_ERROR, {
+          message: responseMessage.AUTHENTICATION_FAILED,
+        });
+      }
 
-  try {
-    const decoded = jsonwebtoken.verify(
-      token,
-      process.env.JWT_SECRET ?? ""
-    ) as JwtPayload;
-
-    if (typeof decoded !== "object" || !decoded.userId) {
-      return res.status(401).json({ message: "Invalid Token Payload" });
+      if (!user) {
+        const errorMsg =
+          info?.message === "jwt expired"
+            ? responseMessage.TOKEN_EXPIRED
+            : responseMessage.UNAUTHORIZED;
+        return sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
+          message: errorMsg,
+        });
+      }
+      req.userId = user._id;
+      next();
     }
-
-    res.userId = decoded.userId;
-    next();
-  } catch (error) {
-    res.status(401).json({ message: "Invalid Token" });
-  }
+  )(req, res, next);
 };
