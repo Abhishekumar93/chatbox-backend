@@ -12,7 +12,8 @@
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "create:migration": "ts-node ./src/scripts/createMigration.ts",
-    "migrate": "ts-node"
+    "migrate": "ts-node",
+    "create:collections": "ts-node ./src/scripts/createCollections.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
