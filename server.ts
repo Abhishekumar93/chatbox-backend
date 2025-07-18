@@ -17,12 +17,12 @@ const io = new Server(server, { cors: { origin: "*" } });
 // Middleware
 dotenv.config();
 app.use(express.json());
-app.use(
-  cors({
-    origin: "http://localhost:3000", // your frontend domain
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: "http://localhost:3000", // your frontend domain
+//     credentials: true,
+//   })
+// );
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
