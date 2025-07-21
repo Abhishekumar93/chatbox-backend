@@ -25,6 +25,12 @@ export const authenticateUser = (
           info?.message === "jwt expired"
             ? responseMessage.TOKEN_EXPIRED
             : responseMessage.UNAUTHORIZED;
+        // res.clearCookie("token", {
+        //   httpOnly: true,
+        //   secure: process.env.NODE_ENV === "production",
+        //   sameSite: "lax",
+        //   path: "/",
+        // });
         return sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
           message: errorMsg,
         });

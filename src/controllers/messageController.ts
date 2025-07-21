@@ -1,8 +1,11 @@
 import { Types } from "mongoose";
-import { Request } from "express";
+import { Request, Response } from "express";
 import Message from "../models/message";
 import Chat from "../models/chat";
+import HttpStatus from "http-status";
+import { sendApiResponse } from "../utils/apiError";
 import { CustomRequest } from "../interface/requests";
+import { responseMessage } from "../constants/responseMessage";
 
 export const saveMessage = async (messageData: {
   content: string;
@@ -28,17 +31,30 @@ export const saveMessage = async (messageData: {
   }
 };
 
-export const getAllMessages = async (req: Request) => {
+export const getAllMessages = async (req: Request, res: Response) => {
   try {
-    return await Message.find({ chatId: req.params.chatId })
+    // const userId =
+    //   req.params.id === "currentUser" ? req?.userId : req.params.id;
+    // console.log(userId, "userId", req.params.chatId);
+    // if (!userId) {
+    //   sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
+    //     message: responseMessage.UNAUTHORIZED,
+    //   });
+    //   return;
+    // }
+    console.log("userId", req.params.chatId);
+    const messagesList = await Message.find({ chatId: req.params.chatId })
       .populate("sender", "name")
       .populate("chatId", "chatName")
       .sort({ createdAt: -1 });
-  } catch (error) {
+    sendApiResponse(res, HttpStatus.OK, { data: messagesList });
+  } catch (error: any) {
+    let errorMessage = "";
     if (error instanceof Error) {
-      throw new Error("Error fetching messages: " + error.message);
+      errorMessage = error.message;
     } else {
-      throw new Error("Error fetching messages: " + String(error));
+      errorMessage = String(error);
     }
+    sendApiResponse(res, HttpStatus.BAD_REQUEST, { message: errorMessage });
   }
 };
