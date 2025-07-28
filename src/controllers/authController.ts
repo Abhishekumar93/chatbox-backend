@@ -103,12 +103,12 @@ export const getUsersList = async (
 ): Promise<void> => {
   try {
     const currentUser = req?.userId;
-    // if (!currentUser) {
-    //   sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
-    //     message: responseMessage.UNAUTHORIZED,
-    //   });
-    //   return;
-    // }
+    if (!currentUser) {
+      sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
+        message: responseMessage.UNAUTHORIZED,
+      });
+      return;
+    }
     const page = parseInt(req.query.page as string) || 1;
     const limitParam = req.query.limit as string | undefined;
 
@@ -146,12 +146,12 @@ export const getUserDetail = async (req: CustomRequest, res: Response) => {
   try {
     const userId =
       req.params.id === "currentUser" ? req?.userId : req.params.id;
-    // if (!userId) {
-    //   sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
-    //     message: responseMessage.UNAUTHORIZED,
-    //   });
-    //   return;
-    // }
+    if (!userId) {
+      sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
+        message: responseMessage.UNAUTHORIZED,
+      });
+      return;
+    }
     const user = await User.findById(userId).select("-password -__v");
     if (!user) {
       sendApiResponse(res, HttpStatus.NOT_FOUND, {
@@ -170,6 +170,7 @@ export const logoutUser = async (
   res: Response
 ): Promise<void> => {
   const currentUser = req?.userId;
+
   await User.findByIdAndUpdate(currentUser, { isOnline: false });
 
   res.clearCookie("token", {

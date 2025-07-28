@@ -1,11 +1,11 @@
 import { Types } from "mongoose";
-import { Request, Response } from "express";
+import { Response } from "express";
 import Message from "../models/message";
 import Chat from "../models/chat";
 import HttpStatus from "http-status";
 import { sendApiResponse } from "../utils/apiError";
 import { CustomRequest } from "../interface/requests";
-import { responseMessage } from "../constants/responseMessage";
+import User from "../models/user";
 
 export const saveMessage = async (messageData: {
   content: string;
@@ -13,7 +13,13 @@ export const saveMessage = async (messageData: {
   sender: Types.ObjectId;
 }) => {
   try {
-    const message = await Message.create(messageData);
+    const decodedMessageData = {
+      ...messageData,
+      chatId: atob(messageData.chatId.toString()),
+    };
+    console.log("Decoded Message Data:", decodedMessageData);
+
+    const message = await Message.create(decodedMessageData);
     message.populate("sender", "name");
     message.populate("chatId", "chatName");
 
@@ -31,23 +37,18 @@ export const saveMessage = async (messageData: {
   }
 };
 
-export const getAllMessages = async (req: Request, res: Response) => {
+export const getAllMessages = async (req: CustomRequest, res: Response) => {
   try {
-    // const userId =
-    //   req.params.id === "currentUser" ? req?.userId : req.params.id;
-    // console.log(userId, "userId", req.params.chatId);
-    // if (!userId) {
-    //   sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
-    //     message: responseMessage.UNAUTHORIZED,
-    //   });
-    //   return;
-    // }
-    console.log("userId", req.params.chatId);
-    const messagesList = await Message.find({ chatId: req.params.chatId })
+    const userDetail = await User.findById(atob(req.params.chatId)).select(
+      "name"
+    );
+    const messagesList = await Message.find({ chatId: atob(req.params.chatId) })
       .populate("sender", "name")
       .populate("chatId", "chatName")
       .sort({ createdAt: -1 });
-    sendApiResponse(res, HttpStatus.OK, { data: messagesList });
+    sendApiResponse(res, HttpStatus.OK, {
+      data: { message: messagesList, user: userDetail },
+    });
   } catch (error: any) {
     let errorMessage = "";
     if (error instanceof Error) {

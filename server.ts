@@ -13,7 +13,13 @@ import { saveMessage } from "./src/controllers/messageController";
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000", // your frontend domain
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  },
+});
 
 // Middleware
 dotenv.config();
@@ -22,6 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: "http://localhost:3000", // your frontend domain
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
@@ -39,6 +46,7 @@ app.use("/api/messages", messageRoutes);
 // Websockets connection
 io.on("connection", (socket) => {
   socket.on("new_message", async (msg) => {
+    console.log("message", msg);
     try {
       const savedMessage = await saveMessage(msg);
       socket
@@ -54,10 +62,10 @@ io.on("connection", (socket) => {
     }
   });
   socket.on("typing", (data) => {
-    socket.to(data.chatId).emit("typing", "typing...");
+    socket.to(data.chatId).emit("typing", true);
   });
   socket.on("stop_typing", (data) => {
-    socket.to(data.chatId).emit("stop_typing", "typing stopped");
+    socket.to(data.chatId).emit("stop_typing", false);
   });
   socket.on("disconnect", () => {
     console.log(`user disconnected ${socket.id}`);
@@ -66,7 +74,7 @@ io.on("connection", (socket) => {
 
 // Start Server
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   process.on("uncaughtException", (error) => {
     console.error(`Error: ${error.message}`);

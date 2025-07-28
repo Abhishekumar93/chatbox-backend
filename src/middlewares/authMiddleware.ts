@@ -14,6 +14,8 @@ export const authenticateUser = (
     "jwt",
     { session: false },
     (err: any, user: any, info: any) => {
+      console.log(user, "Authentication Info:", info);
+
       if (err) {
         return sendApiResponse(res, HttpStatus.INTERNAL_SERVER_ERROR, {
           message: responseMessage.AUTHENTICATION_FAILED,
@@ -25,12 +27,6 @@ export const authenticateUser = (
           info?.message === "jwt expired"
             ? responseMessage.TOKEN_EXPIRED
             : responseMessage.UNAUTHORIZED;
-        // res.clearCookie("token", {
-        //   httpOnly: true,
-        //   secure: process.env.NODE_ENV === "production",
-        //   sameSite: "lax",
-        //   path: "/",
-        // });
         return sendApiResponse(res, HttpStatus.UNAUTHORIZED, {
           message: errorMsg,
         });
