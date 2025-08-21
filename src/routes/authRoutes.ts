@@ -4,11 +4,10 @@ import {
   logoutUser,
   registerUser,
 } from "../controllers/authController";
-import { authenticateUser } from "../middlewares/authMiddleware";
 
 const router = Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.post("/logout", authenticateUser, logoutUser);
+router.post("/logout", logoutUser);
 
 export default router;

@@ -10,6 +10,7 @@ import compression from "compression";
 import passport from "passport";
 import { initializePassport } from "./src/config/passport";
 import { saveMessage } from "./src/controllers/messageController";
+import User from "./src/models/user";
 
 const app = express();
 const server = http.createServer(app);
@@ -43,8 +44,15 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
 
+const onlineUsers = new Map();
+
 // Websockets connection
 io.on("connection", (socket) => {
+  socket.on("register", async (userId) => {
+    onlineUsers.set(socket.id, userId);
+    await User.findByIdAndUpdate(userId, { isOnline: true });
+  });
+
   socket.on("new_message", async (msg) => {
     console.log("message", msg);
     try {
@@ -61,14 +69,22 @@ io.on("connection", (socket) => {
       return;
     }
   });
-  socket.on("typing", (data) => {
-    socket.to(data.chatId).emit("typing", true);
+  socket.on("typing", (data: { userId: string; status: boolean }) => {
+    console.log("User is typing in chat:", data);
+
+    socket.to(data.userId).emit("typing", data.status);
   });
-  socket.on("stop_typing", (data) => {
-    socket.to(data.chatId).emit("stop_typing", false);
+  socket.on("stop_typing", (data: { userId: string; status: boolean }) => {
+    socket.to(data.userId).emit("stop_typing", data.status);
   });
-  socket.on("disconnect", () => {
-    console.log(`user disconnected ${socket.id}`);
+  socket.on("disconnect", async (reason) => {
+    const userId = onlineUsers.get(socket.id);
+    if (userId) {
+      await User.findByIdAndUpdate(userId, { isOnline: false });
+      socket.broadcast.emit("user_offline", { userId });
+      onlineUsers.delete(socket.id);
+    }
+    console.log("Disconnected:", reason);
   });
 });
 

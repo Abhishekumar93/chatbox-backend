@@ -166,12 +166,12 @@ export const getUserDetail = async (req: CustomRequest, res: Response) => {
 };
 
 export const logoutUser = async (
-  req: CustomRequest,
+  req: Request,
   res: Response
 ): Promise<void> => {
-  const currentUser = req?.userId;
+  const { id } = req.body;
 
-  await User.findByIdAndUpdate(currentUser, { isOnline: false });
+  await User.findByIdAndUpdate(atob(id), { isOnline: false });
 
   res.clearCookie("token", {
     httpOnly: true,

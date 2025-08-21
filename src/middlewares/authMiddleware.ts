@@ -14,8 +14,6 @@ export const authenticateUser = (
     "jwt",
     { session: false },
     (err: any, user: any, info: any) => {
-      console.log(user, "Authentication Info:", info);
-
       if (err) {
         return sendApiResponse(res, HttpStatus.INTERNAL_SERVER_ERROR, {
           message: responseMessage.AUTHENTICATION_FAILED,
