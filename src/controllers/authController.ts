@@ -170,7 +170,6 @@ export const logoutUser = async (
   res: Response
 ): Promise<void> => {
   const { id } = req.body;
-
   await User.findByIdAndUpdate(atob(id), { isOnline: false });
 
   res.clearCookie("token", {

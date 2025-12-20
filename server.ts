@@ -11,6 +11,11 @@ import passport from "passport";
 import { initializePassport } from "./src/config/passport";
 import { saveMessage } from "./src/controllers/messageController";
 import User from "./src/models/user";
+import {
+  IMessagePayload,
+  ISocketMessageEvent,
+  ITypeSocketEvent,
+} from "./src/interface/socketEvent";
 
 const app = express();
 const server = http.createServer(app);
@@ -49,17 +54,28 @@ const onlineUsers = new Map();
 // Websockets connection
 io.on("connection", (socket) => {
   socket.on("register", async (userId) => {
+    if (!userId) return;
     onlineUsers.set(socket.id, userId);
     await User.findByIdAndUpdate(userId, { isOnline: true });
   });
 
-  socket.on("new_message", async (msg) => {
-    console.log("message", msg);
+  socket.on("join_room", (data: { chatRoomId: string; userId: string }) => {
+    socket.join(data.chatRoomId);
+  });
+
+  socket.on("new_message", async (msg: ISocketMessageEvent) => {
     try {
-      const savedMessage = await saveMessage(msg);
-      socket
-        .to(msg.chatId)
-        .emit("chat message", savedMessage ?? "Something went wrong");
+      const { chatId, chatRoomId, content, participants } = msg;
+      const msgPayload = {
+        content,
+        chatId,
+        participants,
+      };
+      const savedMessage = await saveMessage(msgPayload);
+      io.in(chatRoomId).emit(
+        "chat message",
+        savedMessage ?? "Something went wrong"
+      );
     } catch (error) {
       if (error instanceof Error) {
         console.error(`Error handling new message: ${error.message}`);
@@ -69,13 +85,13 @@ io.on("connection", (socket) => {
       return;
     }
   });
-  socket.on("typing", (data: { userId: string; status: boolean }) => {
-    console.log("User is typing in chat:", data);
-
-    socket.to(data.userId).emit("typing", data.status);
+  socket.on("typing", (data: ITypeSocketEvent) => {
+    const { chatRoomId, status, userId } = data;
+    socket.to(chatRoomId).emit("typing", { status, userId });
   });
-  socket.on("stop_typing", (data: { userId: string; status: boolean }) => {
-    socket.to(data.userId).emit("stop_typing", data.status);
+  socket.on("stop_typing", (data: ITypeSocketEvent) => {
+    const { chatRoomId, status, userId } = data;
+    socket.to(chatRoomId).emit("stop_typing", { status, userId });
   });
   socket.on("disconnect", async (reason) => {
     const userId = onlineUsers.get(socket.id);
@@ -84,7 +100,6 @@ io.on("connection", (socket) => {
       socket.broadcast.emit("user_offline", { userId });
       onlineUsers.delete(socket.id);
     }
-    console.log("Disconnected:", reason);
   });
 });
 

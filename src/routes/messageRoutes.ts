@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { authenticateUser } from "../middlewares/authMiddleware";
-import { getAllMessages } from "../controllers/messageController";
+import { getParticipantsAllMessages } from "../controllers/messageController";
 
 const router = Router();
 
-router.get("/:chatId", authenticateUser, getAllMessages);
+router.get(
+  "/:senderId/:receiverId",
+  authenticateUser,
+  getParticipantsAllMessages
+);
 
 export default router;
